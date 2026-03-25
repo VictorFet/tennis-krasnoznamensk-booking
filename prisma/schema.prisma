@@ -1,0 +1,114 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+enum Role {
+  USER
+  ADMIN
+}
+
+enum BookingStatus {
+  ACTIVE
+  CANCELLED
+}
+
+enum AuditAction {
+  REGISTER
+  LOGIN
+  LOGOUT
+  BOOKING_CREATE
+  BOOKING_UPDATE
+  BOOKING_DELETE
+  ADMIN_BOOKING_DELETE
+  SETTINGS_UPDATE
+  TIMEBLOCK_CREATE
+  TIMEBLOCK_DELETE
+}
+
+model User {
+  id           String     @id @default(cuid())
+  login        String     @unique
+  passwordHash String
+  role         Role       @default(USER)
+  isActive     Boolean    @default(true)
+  createdAt    DateTime   @default(now())
+  updatedAt    DateTime   @updatedAt
+  bookings     Booking[]
+  sessions     Session[]
+  auditLogs    AuditLog[] @relation("ActorAuditLogs")
+}
+
+model Booking {
+  id         String        @id @default(cuid())
+  userId     String
+  startAt    DateTime
+  endAt      DateTime
+  status     BookingStatus @default(ACTIVE)
+  notes      String?
+  createdAt  DateTime      @default(now())
+  updatedAt  DateTime      @updatedAt
+  cancelledAt DateTime?
+  user       User          @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId, startAt])
+  @@index([startAt, endAt])
+}
+
+model CourtSettings {
+  id                    String   @id @default("default")
+  courtName             String   @default("Теннисный корт, парк Беличий")
+  timezone              String   @default("Europe/Moscow")
+  bookingDurationMin    Int      @default(60)
+  maxDaysAhead          Int      @default(14)
+  minNoticeMinutes      Int      @default(30)
+  rulesText             String   @default("Один слот = 60 минут. Приходите вовремя и соблюдайте чистоту.")
+  allowCancellation     Boolean  @default(true)
+  createdAt             DateTime @default(now())
+  updatedAt             DateTime @updatedAt
+}
+
+model TimeBlock {
+  id          String    @id @default(cuid())
+  startAt     DateTime
+  endAt       DateTime
+  reason      String
+  isActive    Boolean   @default(true)
+  createdById String?
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
+  createdBy   User?     @relation(fields: [createdById], references: [id], onDelete: SetNull)
+
+  @@index([startAt, endAt, isActive])
+}
+
+model AuditLog {
+  id          String      @id @default(cuid())
+  actorUserId String?
+  action      AuditAction
+  entityType  String
+  entityId    String?
+  meta        Json?
+  createdAt   DateTime    @default(now())
+  actor       User?       @relation("ActorAuditLogs", fields: [actorUserId], references: [id], onDelete: SetNull)
+
+  @@index([action, createdAt])
+  @@index([actorUserId, createdAt])
+}
+
+model Session {
+  id         String   @id @default(cuid())
+  token      String   @unique
+  userId     String
+  expiresAt  DateTime
+  createdAt  DateTime @default(now())
+  lastSeenAt DateTime @default(now())
+  user       User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+  @@index([expiresAt])
+}
