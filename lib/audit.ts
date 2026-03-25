@@ -1,3 +1,4 @@
+import { AuditAction, Prisma } from '@prisma/client';
 import { AuditAction } from '@prisma/client';
 import { prisma } from '@/lib/prisma';
 
@@ -6,7 +7,7 @@ export async function writeAuditLog(params: {
   action: AuditAction;
   entityType: string;
   entityId?: string;
-  meta?: Record<string, unknown>;
+  meta?: Prisma.InputJsonValue | Prisma.NullableJsonNullValueInput;
 }) {
   await prisma.auditLog.create({
     data: {
