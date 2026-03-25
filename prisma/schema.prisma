@@ -38,9 +38,10 @@ model User {
   isActive     Boolean    @default(true)
   createdAt    DateTime   @default(now())
   updatedAt    DateTime   @updatedAt
-  bookings     Booking[]
-  sessions     Session[]
-  auditLogs    AuditLog[] @relation("ActorAuditLogs")
+  bookings          Booking[]
+  sessions          Session[]
+  auditLogs         AuditLog[]  @relation("ActorAuditLogs")
+  timeBlocksCreated TimeBlock[] @relation("TimeBlockCreatedBy")
 }
 
 model Booking {
@@ -81,7 +82,7 @@ model TimeBlock {
   createdById String?
   createdAt   DateTime  @default(now())
   updatedAt   DateTime  @updatedAt
-  createdBy   User?     @relation(fields: [createdById], references: [id], onDelete: SetNull)
+  createdBy   User?     @relation("TimeBlockCreatedBy", fields: [createdById], references: [id], onDelete: SetNull)
 
   @@index([startAt, endAt, isActive])
 }
